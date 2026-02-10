@@ -1,0 +1,7 @@
+{
+  "name": "Bar Le Jockey Assistant Chat Only",
+  "description": "A virtual bar assistant for Bar Le Jockey helping customers with menu discovery, events, and custom cocktails.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
