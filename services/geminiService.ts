@@ -1,4 +1,4 @@
-import { GoogleGenAI, Chat, FunctionDeclaration, Type, Part } from "@google/genai";
+import { GoogleGenAI, Chat, FunctionDeclaration, Type, Part, GenerateContentResponse } from "@google/genai";
 import { getSystemInstruction } from "../data/barData";
 
 let chatSession: Chat | null = null;
@@ -7,6 +7,34 @@ let genAI: GoogleGenAI | null = null;
 // gemini-2.5-flash is required for Maps Grounding
 const CHAT_MODEL_NAME = "gemini-2.5-flash";
 const TRANSCRIPTION_MODEL_NAME = "gemini-3-flash-preview";
+
+// Retry configuration
+const MAX_RETRIES = 3;
+const BASE_DELAY = 2000;
+
+async function withRetry<T>(operation: () => Promise<T>): Promise<T> {
+  for (let i = 0; i < MAX_RETRIES; i++) {
+    try {
+      return await operation();
+    } catch (error: any) {
+      const isQuotaError = 
+        error.status === 429 || 
+        error.code === 429 ||
+        (error.error && error.error.code === 429) ||
+        (error.error && error.error.status === 'RESOURCE_EXHAUSTED') ||
+        (error.message && (error.message.includes('429') || error.message.includes('quota') || error.message.includes('RESOURCE_EXHAUSTED')));
+
+      if (isQuotaError && i < MAX_RETRIES - 1) {
+        const delay = BASE_DELAY * Math.pow(2, i);
+        console.warn(`[Gemini] Rate limit exceeded. Retrying in ${delay}ms... (Attempt ${i + 1}/${MAX_RETRIES})`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw new Error("Max retries exceeded");
+}
 
 // Define the tool for ordering
 const orderTool: FunctionDeclaration = {
@@ -92,8 +120,8 @@ export const sendMessageToGemini = async (
 
     const fullMessage = languageDirective + message;
 
-    // 1. Send user message
-    let response = await chatSession.sendMessage({ message: fullMessage });
+    // 1. Send user message with Retry
+    let response: GenerateContentResponse = await withRetry(() => chatSession!.sendMessage({ message: fullMessage }));
 
     // 2. Check for Function Calls (Loop for multiple turns)
     let maxTurns = 5;
@@ -145,9 +173,10 @@ export const sendMessageToGemini = async (
       }
 
       if (functionResponseParts.length > 0) {
-        response = await chatSession.sendMessage({
+        // Send tool response with Retry
+        response = await withRetry(() => chatSession!.sendMessage({
           message: functionResponseParts
-        });
+        }));
       }
     }
 
@@ -155,7 +184,7 @@ export const sendMessageToGemini = async (
     let finalText = response.text || (language === 'fr' ? "Commande prise en compte." : "Order received.");
     
     // Check for grounding chunks (Google Maps)
-    const candidates = (response as any).candidates;
+    const candidates = response.candidates;
     if (candidates && candidates[0]?.groundingMetadata?.groundingChunks) {
       const chunks = candidates[0].groundingMetadata.groundingChunks;
       let linksText = "";
@@ -200,7 +229,7 @@ export const transcribeAudio = async (audioBase64: string, mimeType: string, lan
 
   try {
     // Use gemini-3-flash-preview for transcription as requested
-    const response = await genAI.models.generateContent({
+    const response: GenerateContentResponse = await withRetry(() => genAI!.models.generateContent({
       model: TRANSCRIPTION_MODEL_NAME,
       contents: {
         parts: [
@@ -217,7 +246,7 @@ export const transcribeAudio = async (audioBase64: string, mimeType: string, lan
           }
         ]
       }
-    });
+    }));
 
     return response.text || "";
   } catch (error) {
