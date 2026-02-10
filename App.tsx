@@ -10,8 +10,8 @@ import { BAR_DATA } from './data/barData';
 import { sendMessageToGemini, transcribeAudio } from './services/geminiService';
 import { submitOrderToFirebase } from './services/firebase';
 
-const GREETING_FR = "Salut ! Je suis ton barman virtuel. \n\nJe peux prendre ta commande, te suggérer des cocktails ou appeler un taxi.\n\nQu'est-ce que je te sers ?";
-const GREETING_EN = "Hi! I'm your virtual bartender. \n\nI can take your order, suggest cocktails, or call a cab.\n\nWhat can I get for you?";
+const GREETING_FR = "Salut ! Je suis ton barman virtuel. \n\nJe peux te conseiller des cocktails, te donner des recettes ou appeler un taxi.\n\nQuelle est ton envie du moment ?";
+const GREETING_EN = "Hi! I'm your virtual bartender. \n\nI can suggest cocktails, share recipes, or call a cab.\n\nWhat are you in the mood for?";
 
 const App: React.FC = () => {
   // --- STATE ---
@@ -87,101 +87,16 @@ const App: React.FC = () => {
     setCart(prev => prev.filter(i => i.id !== cartItemId));
   };
 
-  // Callback for Gemini Tool Call
-  const handleGeminiAddToCart = (itemName: string, quantity: number) => {
-    const normalize = (s: string) => s.toLowerCase().trim();
-    
-    // --- SPECIAL HANDLING FOR CREATIVE CUSTOM NAMES ---
-    // The AI sends "CUSTOM: Creative Name (Details)"
-    if (itemName.startsWith("CUSTOM:")) {
-        const rawName = itemName.replace("CUSTOM:", "").trim();
-        const baseItem = BAR_DATA.menu.find(i => i.name === 'Cocktail Sur Mesure' || i.nameEn === 'Custom Cocktail');
-        
-        if (baseItem) {
-            // Add to cart with the CREATIVE name, but base price/image
-            const customCartItem = {
-                ...baseItem,
-                name: rawName // Override generic name with creative name
-            };
-            addToCart(customCartItem, quantity, baseItem.price);
-            return { 
-                success: true, 
-                message: language === 'fr' 
-                  ? `J'ai ajouté votre création "${rawName}" au panier.` 
-                  : `I've added your creation "${rawName}" to the cart.`, 
-                price: baseItem.price 
-            };
-        }
-    }
-
-    // --- STANDARD ITEM HANDLING ---
-    let target = normalize(itemName);
-    
-    const sizeMatch = itemName.match(/\((.*?)\)/);
-    let specificSize = sizeMatch ? sizeMatch[1].toLowerCase() : null;
-    let baseName = itemName;
-
-    if (specificSize) {
-      baseName = itemName.replace(/\s*\(.*?\)\s*/g, '').trim();
-      target = normalize(baseName);
-    }
-
-    const menuItem = BAR_DATA.menu.find(i => normalize(i.name) === target || normalize(i.name).includes(target));
-    if (menuItem) {
-      let finalPrice = menuItem.price;
-      let finalName = menuItem.name;
-
-      if (menuItem.price.includes('/')) {
-         const prices = menuItem.price.split('/').map(p => p.trim());
-         let priceIndex = 1; 
-
-         if (specificSize) {
-            if (specificSize.includes('verre') || specificSize.includes('glass')) priceIndex = 0;
-            else if (specificSize.includes('pinte') || specificSize.includes('pint')) priceIndex = 1;
-            else if (specificSize.includes('pichet') || specificSize.includes('pitcher')) priceIndex = 2;
-         }
-
-         if (priceIndex >= prices.length) priceIndex = prices.length - 1;
-
-         let selectedPrice = prices[priceIndex];
-         if (!selectedPrice.includes('$') && menuItem.price.includes('$')) {
-            selectedPrice += '$';
-         }
-         finalPrice = selectedPrice;
-
-         if (specificSize) {
-            const sizeLabel = specificSize.charAt(0).toUpperCase() + specificSize.slice(1);
-            finalName = `${menuItem.name} (${sizeLabel})`;
-         } else {
-            const labels = ['Verre', 'Pinte', 'Pichet'];
-            finalName = `${menuItem.name} (${labels[priceIndex] || ''})`;
-         }
-      }
-
-      const cartItemObj = { ...menuItem, name: finalName };
-      addToCart(cartItemObj, quantity, finalPrice);
-      return { success: true, message: `Ajouté ${quantity} ${finalName}`, price: finalPrice };
-    }
-
-    const prodItem = BAR_DATA.products.find(i => normalize(i.name) === target);
-    if (prodItem) {
-      addToCart(prodItem, quantity);
-      return { success: true, message: `Ajouté ${quantity} ${prodItem.name}`, price: prodItem.salePrice || prodItem.price };
-    }
-
-    return { success: false, message: "Item non trouvé." };
-  };
-
   const handleSendMessage = async (text: string) => {
     const newUserMsg: Message = { role: 'user', text, timestamp: new Date() };
     setMessages(prev => [...prev, newUserMsg]);
     setIsChatLoading(true);
 
     try {
+      // We removed the order callback, so the AI will simply advise.
       const responseText = await sendMessageToGemini(
         text,
         language,
-        handleGeminiAddToCart,
         () => setIsCabModalOpen(true) 
       );
 
@@ -189,7 +104,7 @@ const App: React.FC = () => {
         role: 'model', 
         text: responseText, 
         timestamp: new Date(),
-        isPaymentRequest: responseText.includes("///PAY///")
+        isPaymentRequest: false
       };
       setMessages(prev => [...prev, newModelMsg]);
     } catch (e) {
@@ -216,7 +131,10 @@ const App: React.FC = () => {
 
   const handleCustomizeItem = (item: MenuItem) => {
     setIsChatOpen(true);
-    const prompt = language === 'fr' ? `Je veux commander un ${item.name}.` : `I want to order a ${item.name}.`;
+    // Changed prompt from ordering to asking about the drink
+    const prompt = language === 'fr' 
+      ? `Parle-moi du cocktail ${item.name} et de ses saveurs.` 
+      : `Tell me about the ${item.name} cocktail and its flavors.`;
     handleSendMessage(prompt);
   };
 
@@ -254,7 +172,7 @@ const App: React.FC = () => {
                   : "Thanks! Your order is being prepared.",
                 timestamp: new Date()
             }]);
-        }, 1500); // Reduced delay to 1.5s
+        }, 1500); 
 
     } catch (error) {
         console.error("Failed to submit order", error);
@@ -590,7 +508,6 @@ const App: React.FC = () => {
         onTranscribeAudio={handleTranscribeAudio}
         onTriggerPayment={handleTriggerPayment}
         onTriggerCab={() => handleSendMessage(t("Je veux un taxi", "I need a taxi"))}
-        onQuickOrder={(item) => handleGeminiAddToCart(item, 1)}
         cartCount={cart.length}
         onOpenCart={() => setIsCartOpen(true)}
         language={language}

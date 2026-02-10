@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Message } from '../types';
-import { Send, X, MessageCircle, Sparkles, Loader2, CreditCard, Plus, ShoppingBag, Mic, StopCircle } from 'lucide-react';
+import { Send, X, MessageCircle, Sparkles, Loader2, CreditCard, ShoppingBag, Mic, StopCircle } from 'lucide-react';
 import { BAR_DATA } from '../data/barData';
 
 interface ChatInterfaceProps {
@@ -12,7 +12,6 @@ interface ChatInterfaceProps {
   onTranscribeAudio: (audioBase64: string, mimeType: string) => Promise<string>;
   onTriggerPayment: () => void;
   onTriggerCab: () => void;
-  onQuickOrder: (item: string) => void;
   cartCount: number;
   onOpenCart: () => void;
   language: 'fr' | 'en';
@@ -27,7 +26,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onTranscribeAudio,
   onTriggerPayment,
   onTriggerCab,
-  onQuickOrder,
   cartCount,
   onOpenCart,
   language

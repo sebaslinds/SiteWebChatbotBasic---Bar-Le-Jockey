@@ -36,26 +36,6 @@ async function withRetry<T>(operation: () => Promise<T>): Promise<T> {
   throw new Error("Max retries exceeded");
 }
 
-// Define the tool for ordering
-const orderTool: FunctionDeclaration = {
-  name: "addToOrder",
-  description: "Add an item from the menu to the customer's shopping cart/order. Use this when the user explicitly wants to order a drink or item.",
-  parameters: {
-    type: Type.OBJECT,
-    properties: {
-      itemName: {
-        type: Type.STRING,
-        description: "The exact name of the item from the menu. IMPORTANT: For items with multiple sizes (e.g., beers like 'Cold IPA'), you MUST include the size/format in the name (e.g., 'Cold IPA (Verre)', 'Cold IPA (Pinte)').",
-      },
-      quantity: {
-        type: Type.INTEGER,
-        description: "The number of items to order. Defaults to 1.",
-      },
-    },
-    required: ["itemName"],
-  },
-};
-
 const cabTool: FunctionDeclaration = {
   name: "openCabModal",
   description: "Open the taxi/cab selection modal for the user. Use this when the user asks for a taxi, uber, cab, or a ride home.",
@@ -82,7 +62,7 @@ export const initializeChat = async () => {
         temperature: 0.9, // High creativity for custom cocktail names
         maxOutputTokens: 1000, // Increased to allow detailed bullet-point recipes
         tools: [
-          { functionDeclarations: [orderTool, cabTool] },
+          { functionDeclarations: [cabTool] },
           { googleMaps: {} } // Enable Maps Grounding
         ], 
       },
@@ -95,12 +75,9 @@ export const initializeChat = async () => {
   }
 };
 
-type OrderCallback = (itemName: string, quantity: number) => { success: boolean; message: string; price?: string };
-
 export const sendMessageToGemini = async (
   message: string, 
   language: 'fr' | 'en',
-  onAddToCart?: OrderCallback,
   onOpenCab?: () => void
 ): Promise<string> => {
   if (!chatSession) {
@@ -132,26 +109,7 @@ export const sendMessageToGemini = async (
       const functionResponseParts: Part[] = [];
 
       for (const call of response.functionCalls) {
-        if (call.name === "addToOrder" && onAddToCart) {
-          const args = call.args as any;
-          const itemName = args.itemName;
-          const quantity = args.quantity || 1;
-
-          console.log(`[Gemini] Tool Call: Adding ${quantity}x ${itemName}`);
-          const actionResult = onAddToCart(itemName, quantity);
-
-          functionResponseParts.push({
-            functionResponse: {
-              name: "addToOrder",
-              id: call.id,
-              response: {
-                result: actionResult.success ? "SUCCESS" : "FAILURE",
-                details: actionResult.message,
-                price: actionResult.price
-              }
-            }
-          });
-        } else if (call.name === "openCabModal" && onOpenCab) {
+        if (call.name === "openCabModal" && onOpenCab) {
            console.log(`[Gemini] Tool Call: Opening Cab Modal`);
            onOpenCab();
            functionResponseParts.push({
@@ -181,7 +139,7 @@ export const sendMessageToGemini = async (
     }
 
     // 3. Extract Maps Grounding Data
-    let finalText = response.text || (language === 'fr' ? "Commande prise en compte." : "Order received.");
+    let finalText = response.text || (language === 'fr' ? "Je n'ai pas de réponse." : "I have no response.");
     
     // Check for grounding chunks (Google Maps)
     const candidates = response.candidates;
