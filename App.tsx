@@ -204,7 +204,7 @@ const App: React.FC = () => {
           </button>
 
           <a 
-            href="https://www.google.com/maps/search/?api=1&query=Bar+Le+Jockey+1309+Rue+Saint-Zotique+Est+Montréal+QC" 
+            href="https://www.google.com/maps/search/?api=1&query=Bar+Le+Jockey+1309+Rue+Saint-Zotique+Est+Montréal+QC+H2G+1G6" 
             target="_blank" 
             rel="noopener noreferrer" 
             className="text-brand-dim hover:text-white transition-colors"
@@ -371,9 +371,14 @@ const App: React.FC = () => {
 
       {/* --- FOOTER --- */}
       <footer className="bg-black py-12 px-6 border-t border-white/5 text-center">
-        <p className="text-brand-dim text-sm font-light">
+        <a 
+          href="https://www.google.com/maps/search/?api=1&query=Bar+Le+Jockey+1309+Rue+Saint-Zotique+Est+Montr%C3%A9al+QC+H2G+1G6" 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          className="text-brand-dim text-sm font-light hover:text-white transition-colors border-b border-transparent hover:border-brand-accent pb-1"
+        >
           1309 Rue Saint-Zotique Est, Montréal, QC H2G 1G6
-        </p>
+        </a>
       </footer>
 
 
