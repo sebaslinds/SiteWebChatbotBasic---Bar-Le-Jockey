@@ -473,9 +473,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 </div>
 
               </div>
-              <p className="text-center text-[10px] text-brand-dim/40 mt-3 uppercase tracking-widest">
-                {t("Généré par IA • Vérifiez avec le staff", "AI Generated • Verify with staff")}
-              </p>
             </div>
           </div>
         </>

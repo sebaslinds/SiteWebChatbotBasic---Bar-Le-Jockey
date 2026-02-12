@@ -40,9 +40,9 @@ const CabModal: React.FC<CabModalProps> = ({ isOpen, onClose, language }) => {
         </p>
 
         <div className="w-full space-y-4">
-          {/* TAXI BUTTON */}
+          {/* TAXI COOP BUTTON */}
           <a 
-            href="tel:5148360000"
+            href="tel:5142791133"
             className="group w-full flex items-center justify-between bg-[#222] hover:bg-white hover:text-black border border-white/10 p-4 rounded transition-all duration-300"
           >
             <div className="flex items-center gap-4">
@@ -50,8 +50,8 @@ const CabModal: React.FC<CabModalProps> = ({ isOpen, onClose, language }) => {
                 <Phone size={24} />
               </div>
               <div className="text-left">
-                <div className="font-bold text-lg leading-none">Taxis Coop</div>
-                <div className="text-xs opacity-60 mt-1">514-836-0000</div>
+                <div className="font-bold text-lg leading-none">Taxi Coop</div>
+                <div className="text-xs opacity-60 mt-1">514-279-1133</div>
               </div>
             </div>
           </a>
