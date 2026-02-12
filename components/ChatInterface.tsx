@@ -39,8 +39,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Extract categories dynamically
-  const categories = Array.from(new Set(BAR_DATA.menu.map(item => item.category)));
+  // Extract categories dynamically, filtering out 'Special' as it has its own dedicated button ("Sur Mesure")
+  const categories = Array.from(new Set(BAR_DATA.menu.map(item => item.category)))
+    .filter(cat => cat !== 'Special');
 
   const t = (fr: string, en: string) => language === 'fr' ? fr : en;
 
