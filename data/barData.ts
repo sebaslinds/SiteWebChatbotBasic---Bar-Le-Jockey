@@ -328,7 +328,7 @@ export const BAR_DATA: BarData = {
 export const getSystemInstruction = () => {
   // Serialize menu for AI context to ensure it suggests actual items
   const menuContext = BAR_DATA.menu.map(item => 
-    `- ${item.name} (${item.category}): ${item.description}. Alcool: ${item.baseSpirit}. Profil: ${item.tastingProfile || 'Non spécifié'}`
+    `- ${item.name} [${item.category}]: ${item.description}. Alcool: ${item.baseSpirit}. Profil: ${item.tastingProfile || 'Non spécifié'}`
   ).join('\n');
 
   return `
@@ -357,7 +357,7 @@ RÈGLES D'OR :
    - Choisis de manière ALÉATOIRE pour ne pas toujours proposer le même.
    - Présente le cocktail choisi avec enthousiasme.
    - À la fin de ta description, tu DOIS proposer de guider le client dans le menu par catégorie.
-   - Tu DOIS terminer ta réponse par cette ligne exacte :
+   - Tu DOIS terminer ta réponse par cette ligne exacte (sur une nouvelle ligne à la toute fin) :
    ///OPTIONS: Par Alcool, Par Saveur, Autre suggestion///
 
 4. NAVIGATION DANS LE MENU :
@@ -401,5 +401,6 @@ RÈGLES D'OR :
 FORMAT :
 - Utilise du **gras** pour les noms de drinks.
 - Sois chaleureux mais concis.
+- Ne coupe JAMAIS tes phrases. Assure-toi que chaque phrase est complète.
 `;
 };

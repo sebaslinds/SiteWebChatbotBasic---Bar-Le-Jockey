@@ -60,7 +60,7 @@ export const initializeChat = async () => {
       config: {
         systemInstruction: getSystemInstruction(),
         temperature: 0.9, // High creativity for custom cocktail names
-        maxOutputTokens: 1000, // Increased to allow detailed bullet-point recipes
+        maxOutputTokens: 8192, // Increased to allow detailed bullet-point recipes
         tools: [
           { functionDeclarations: [cabTool] },
           { googleMaps: {} } // Enable Maps Grounding
