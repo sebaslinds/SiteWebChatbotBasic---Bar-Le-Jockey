@@ -8,7 +8,22 @@ import Logo from './components/Logo';
 import { MenuItem, ProductItem, CartItem, Message } from './types';
 import { BAR_DATA } from './data/barData';
 import { sendMessageToGemini, transcribeAudio } from './services/geminiService';
-import { submitOrderToFirebase } from './services/firebase';
+
+const submitOrderToBackend = async (orderData: any) => {
+  const response = await fetch('/api/orders', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(orderData)
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to submit order');
+  }
+  
+  return await response.json();
+};
 
 const GREETING_FR = "Salut ! Je suis ton barman virtuel. \n\nJe peux te conseiller des cocktails, te donner des recettes ou appeler un taxi.\n\nQuelle est ton envie du moment ?";
 const GREETING_EN = "Hi! I'm your virtual bartender. \n\nI can suggest cocktails, share recipes, or call a cab.\n\nWhat are you in the mood for?";
@@ -149,7 +164,7 @@ const App: React.FC = () => {
     setIsSubmittingOrder(true);
 
     try {
-        await submitOrderToFirebase({
+        await submitOrderToBackend({
             customerName: customerIdentifier,
             items: cart,
             totalPrice: cartTotal,
