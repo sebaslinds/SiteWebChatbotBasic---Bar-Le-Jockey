@@ -187,7 +187,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
     // Check for ///OPTIONS: .../// using a robust regex that handles newlines and spaces around the tag
     // Matches ///OPTIONS: ... /// globally OR ///OPTIONS: ... at end of string (handle missing closing slash)
-    const optionsRegex = /\/\/\/\s*OPTIONS\s*:([\s\S]*?)(\/\/\/|$)/gi;
+    // Also handles cases where the AI might just output OPTIONS: without the slashes
+    const optionsRegex = /(?:\/\/\/)?\s*OPTIONS\s*:([\s\S]*?)(?:\/\/\/|$)/gi;
     
     // Find all matches
     const matches = Array.from(cleanText.matchAll(optionsRegex));
@@ -201,6 +202,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       
       // Remove ALL options tags from the visible text
       cleanText = cleanText.replace(optionsRegex, '').trim();
+    } else {
+      // If no explicit options, extract bold text as options
+      const boldRegex = /\*\*(.*?)\*\*/g;
+      const boldMatches = Array.from(cleanText.matchAll(boldRegex));
+      if (boldMatches.length > 0) {
+        options = boldMatches.map(m => m[1].trim()).filter(opt => opt.length > 0);
+        // Deduplicate
+        options = Array.from(new Set(options));
+      }
     }
 
     return { cleanText, options };
@@ -217,7 +227,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     return parts.map((part, index) => {
       if (part.startsWith('**') && part.endsWith('**')) {
         const content = part.slice(2, -2);
-        return <strong key={index} className="font-bold text-white">{content}</strong>;
+        return (
+          <button 
+            key={index}
+            onClick={() => onSendMessage(content)}
+            className="font-bold text-brand-accent hover:text-white underline decoration-brand-accent/30 hover:decoration-white underline-offset-2 transition-colors cursor-pointer text-left inline"
+            title={t("Sélectionner", "Select")}
+          >
+            {content}
+          </button>
+        );
       }
       // Simple link parser for the part (very basic)
       // Regex to find [Title](URL)
@@ -245,13 +264,43 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     });
   };
 
-  const MessageBubble: React.FC<{ msg: Message, isLast: boolean }> = ({ msg, isLast }) => {
+  const MessageBubble: React.FC<{ msg: Message, isLast: boolean, lastUserText?: string }> = ({ msg, isLast, lastUserText }) => {
     const isUser = msg.role === 'user';
     
     // Only parse options for model messages
-    const { cleanText, options } = !isUser 
+    let { cleanText, options } = !isUser 
       ? parseMessageContent(msg.text) 
       : { cleanText: msg.text, options: [] };
+
+    if (!isUser && lastUserText) {
+      // Find the longest drink name that matches the user's text
+      const matchedDrink = [...BAR_DATA.menu]
+        .sort((a, b) => b.name.length - a.name.length)
+        .find(item => lastUserText.toLowerCase().includes(item.name.toLowerCase()))?.name;
+
+      if (matchedDrink) {
+        // Remove the drink name from options if it was extracted from bold text
+        options = options.filter(opt => opt.toLowerCase() !== matchedDrink.toLowerCase());
+        
+        const isAskingForRecipe = 
+          lastUserText.toLowerCase().includes('comment faire') || 
+          lastUserText.toLowerCase().includes('how to make') ||
+          lastUserText.toLowerCase().includes('maison') ||
+          lastUserText.toLowerCase().includes('home') ||
+          lastUserText.toLowerCase().includes('recette') ||
+          lastUserText.toLowerCase().includes('recipe');
+                                  
+        // Add the "tips" option if it's the last message and they didn't just ask for the recipe
+        if (isLast && !isAskingForRecipe) {
+          const astucesText = language === 'fr' 
+            ? `Comment faire un ${matchedDrink} à la maison ?` 
+            : `How to make a ${matchedDrink} at home?`;
+          if (!options.includes(astucesText)) {
+            options.push(astucesText);
+          }
+        }
+      }
+    }
 
     // Detect if the options are all numeric (1, 2, 3...) to render them as squares
     const isNumericOptions = !isUser && options.length > 0 && options.every(opt => /^\d+$/.test(opt));
@@ -397,13 +446,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-4 space-y-6 bg-[#0e0e0e]">
-              {messages.map((msg, idx) => (
-                <MessageBubble 
-                  key={idx} 
-                  msg={msg} 
-                  isLast={idx === messages.length - 1} 
-                />
-              ))}
+              {messages.map((msg, idx) => {
+                const prevUserMsg = [...messages].slice(0, idx).reverse().find(m => m.role === 'user');
+                return (
+                  <MessageBubble 
+                    key={idx} 
+                    msg={msg} 
+                    isLast={idx === messages.length - 1} 
+                    lastUserText={prevUserMsg?.text}
+                  />
+                );
+              })}
               {isLoading && (
                 <div className="flex justify-start">
                   <div className="bg-[#1c1c1c] p-4 rounded-2xl rounded-tl-sm border border-white/5">
