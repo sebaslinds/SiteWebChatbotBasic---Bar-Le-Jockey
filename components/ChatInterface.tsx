@@ -39,11 +39,19 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Extract categories dynamically, filtering out 'Special' as it has its own dedicated button ("Sur Mesure")
-  const categories = Array.from(new Set(BAR_DATA.menu.map(item => item.category)))
-    .filter(cat => cat !== 'Special');
-
   const t = (fr: string, en: string) => language === 'fr' ? fr : en;
+
+  // Extract categories dynamically, filtering out 'Special' as it has its own dedicated button ("Sur Mesure")
+  // Use a Map to keep track of the translated category names to avoid duplicates
+  const categoryMap = new Map<string, string>();
+  BAR_DATA.menu.forEach(item => {
+    if (item.category !== 'Special') {
+      const catName = language === 'fr' ? item.category : (item.categoryEn || item.category);
+      if (!categoryMap.has(catName)) {
+        categoryMap.set(catName, item.category); // Store display name -> original name for the prompt
+      }
+    }
+  });
 
   const quickActions = [
     // 1. Sur Mesure
@@ -62,9 +70,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         text: t("Où êtes-vous situés ?", "Where are you located?") 
     },
     // 4. Menu Categories
-    ...categories.map(cat => ({
-      label: cat,
-      text: t(`Qu'est-ce qu'il y a dans la catégorie ${cat} ?`, `What is in the ${cat} category?`)
+    ...Array.from(categoryMap.entries()).map(([displayCat, originalCat]) => ({
+      label: displayCat,
+      text: t(`Qu'est-ce qu'il y a dans la catégorie ${originalCat} ?`, `What is in the ${displayCat} category?`)
     })),
     // 5. Taxi
     { 
