@@ -5,7 +5,7 @@ let chatSession: Chat | null = null;
 let genAI: GoogleGenAI | null = null;
 
 // gemini-2.5-flash is required for Maps Grounding
-const CHAT_MODEL_NAME = "gemini-2.5-flash";
+const CHAT_MODEL_NAME = "gemini-3-flash";
 const TRANSCRIPTION_MODEL_NAME = "gemini-3-flash";
 
 // Retry configuration
