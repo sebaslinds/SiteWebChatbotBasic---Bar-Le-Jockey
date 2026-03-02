@@ -6,7 +6,7 @@ let genAI: GoogleGenAI | null = null;
 
 // gemini-2.5-flash is required for Maps Grounding
 const CHAT_MODEL_NAME = "gemini-2.5-flash";
-const TRANSCRIPTION_MODEL_NAME = "gemini-3-flash-preview";
+const TRANSCRIPTION_MODEL_NAME = "gemini-3-flash";
 
 // Retry configuration
 const MAX_RETRIES = 3;
