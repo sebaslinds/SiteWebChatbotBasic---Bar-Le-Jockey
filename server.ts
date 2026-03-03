@@ -153,7 +153,7 @@ app.post("/api/chat", async (req, res) => {
 
     const genAI = new GoogleGenAI({ apiKey });
     const chatSession = genAI.chats.create({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.1-pro",
       config: {
         systemInstruction: getSystemInstruction(),
         temperature: 0.9,
@@ -268,7 +268,7 @@ app.post("/api/transcribe", async (req, res) => {
     const genAI = new GoogleGenAI({ apiKey });
     
     const response = await withRetry(() => genAI.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-3.1-pro",
       contents: {
         parts: [
           { 
